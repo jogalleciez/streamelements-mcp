@@ -1,0 +1,161 @@
+import { z } from "zod";
+import type { EndpointDef } from "../endpoint.js";
+import { jsonObject, objectId } from "./common.js";
+
+const toolset = "giveaways";
+const version = "v3";
+
+const giveawayId = { giveawayId: objectId("Giveaway id") };
+
+const giveawayDocument = jsonObject(
+  "Giveaway fields. StreamElements does not document them field by field; ones seen on giveaways include " +
+    "title, description, subscriberOnly, subscriberLuck (ticket multiplier for subscribers) and botResponses.",
+);
+
+export const giveawayEndpoints: EndpointDef[] = [
+  {
+    name: "giveaways_list",
+    title: "List giveaways",
+    description: "List the channel's giveaways, including the active one.",
+    toolset,
+    method: "GET",
+    path: "/giveaways/{channel}",
+    version,
+  },
+  {
+    name: "giveaways_create",
+    title: "Create giveaway",
+    description: "Create a giveaway where viewers buy tickets with loyalty points. Start it with giveaways_start.",
+    toolset,
+    method: "POST",
+    path: "/giveaways/{channel}",
+    version,
+    input: { giveaway: giveawayDocument },
+    body: { from: "giveaway" },
+  },
+  {
+    name: "giveaways_history",
+    title: "List past giveaways",
+    description: "List the channel's previous giveaways.",
+    toolset,
+    method: "GET",
+    path: "/giveaways/{channel}/history",
+    version,
+  },
+  {
+    name: "giveaways_get",
+    title: "Get giveaway",
+    description: "Get one giveaway by id, optionally with its entrants.",
+    toolset,
+    method: "GET",
+    path: "/giveaways/{channel}/{giveawayId}",
+    version,
+    input: { ...giveawayId, entrants: z.boolean().optional().describe("Include the entrants list") },
+    query: ["entrants"],
+  },
+  {
+    name: "giveaways_create_by_id",
+    title: "Post to giveaway",
+    description:
+      "POST /giveaways/{channel}/{giveawayId}. StreamElements labels it 'Create a new Giveaway' and says the id " +
+      "may refer to the ongoing giveaway; the body format is undocumented. Prefer giveaways_create to create one.",
+    toolset,
+    method: "POST",
+    path: "/giveaways/{channel}/{giveawayId}",
+    version,
+    input: { ...giveawayId, giveaway: giveawayDocument.optional() },
+    body: { from: "giveaway" },
+  },
+  {
+    name: "giveaways_update",
+    title: "Update giveaway",
+    description: "Update a giveaway's settings.",
+    toolset,
+    method: "PUT",
+    path: "/giveaways/{channel}/{giveawayId}",
+    version,
+    input: { ...giveawayId, giveaway: giveawayDocument },
+    body: { from: "giveaway" },
+  },
+  {
+    name: "giveaways_delete",
+    title: "Delete giveaway",
+    description: "Permanently delete a giveaway.",
+    toolset,
+    method: "DELETE",
+    path: "/giveaways/{channel}/{giveawayId}",
+    version,
+    input: giveawayId,
+  },
+  {
+    name: "giveaways_list_entrants",
+    title: "List giveaway entrants",
+    description: "List the users who joined a giveaway and their tickets.",
+    toolset,
+    method: "GET",
+    path: "/giveaways/{channel}/{giveawayId}/joined",
+    version,
+    input: giveawayId,
+  },
+  {
+    name: "giveaways_start",
+    title: "Start giveaway",
+    description: "Start a giveaway so viewers can join.",
+    toolset,
+    method: "PUT",
+    path: "/giveaways/{channel}/{giveawayId}/start",
+    version,
+    input: giveawayId,
+  },
+  {
+    name: "giveaways_draw_winner",
+    title: "Draw giveaway winner",
+    description: "Draw a random winner from the giveaway's entrants. Each call draws another winner.",
+    toolset,
+    method: "PUT",
+    path: "/giveaways/{channel}/{giveawayId}/winner",
+    version,
+    input: giveawayId,
+    annotations: { idempotentHint: false },
+  },
+  {
+    name: "giveaways_complete",
+    title: "Complete giveaway",
+    description: "Mark a giveaway as complete once winners are settled.",
+    toolset,
+    method: "PUT",
+    path: "/giveaways/{channel}/{giveawayId}/complete",
+    version,
+    input: giveawayId,
+  },
+  {
+    name: "giveaways_reopen",
+    title: "Reopen giveaway",
+    description: "Reopen a closed giveaway so viewers can join again.",
+    toolset,
+    method: "PUT",
+    path: "/giveaways/{channel}/{giveawayId}/reopen",
+    version,
+    input: giveawayId,
+  },
+  {
+    name: "giveaways_refund",
+    title: "Refund giveaway",
+    description: "Cancel a giveaway and refund every entrant's tickets.",
+    toolset,
+    method: "DELETE",
+    path: "/giveaways/{channel}/{giveawayId}/refund",
+    version,
+    input: giveawayId,
+  },
+  {
+    name: "giveaways_close",
+    title: "Close giveaway entries",
+    description: "Close entries on a running giveaway, so no new tickets are accepted, before drawing a winner.",
+    toolset,
+    method: "DELETE",
+    path: "/giveaways/{channel}/{giveawayId}/close",
+    version,
+    input: giveawayId,
+  },
+];
