@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "inspector",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "@modelcontextprotocol/inspector",
+        "node",
+        "--env-file-if-exists=.env",
+        "build/index.js"
+      ],
+      "port": 6274
+    }
+  ]
+}

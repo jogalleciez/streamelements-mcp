@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "description": "MCP server exposing the full StreamElements REST API (bot, loyalty, store, tips, song requests, contests, giveaways, and more)",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jogalleciez/streamelements-mcp.git"
+  },
+  "homepage": "https://github.com/jogalleciez/streamelements-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/jogalleciez/streamelements-mcp/issues"
+  },
   "bin": {
     "streamelements-mcp": "./build/index.js"
   },
@@ -11,6 +19,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node -e \"require('fs').chmodSync('build/index.js', 0o755)\"",
+    "prepare": "npm run build",
     "start": "node build/index.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",

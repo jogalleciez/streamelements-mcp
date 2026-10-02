@@ -205,6 +205,16 @@ const cases: Array<[tool: string, args: Record<string, unknown>, expected: Expec
   ["sessions_reset", {}, { method: "PUT", path: `${V2}/sessions/${CH}/reset` }],
   ["overlays_action", { action: "mute" }, { method: "PUT", path: `${V2}/overlays/${CH}/action/mute` }],
   [
+    "overlays_create",
+    { name: "Just Chatting" },
+    {
+      method: "POST",
+      path: `${V2}/overlays/${CH}`,
+      body: { name: "Just Chatting", settings: { width: 1920, height: 1080, name: "1080p" }, widgets: [] },
+    },
+  ],
+  ["overlays_delete", { overlayId: ID }, { method: "DELETE", path: `${V2}/overlays/${CH}/${ID}` }],
+  [
     "chatstats_search",
     { channel: "somestreamer" },
     { method: "GET", path: `${V2}/chatstats/search`, query: { channel: "somestreamer" } },

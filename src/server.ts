@@ -1,10 +1,12 @@
+import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SEClient } from "./client.js";
 import type { Config } from "./config.js";
 import { registerTools } from "./tools/index.js";
 
 export const SERVER_NAME = "streamelements";
-export const SERVER_VERSION = "0.1.0";
+// package.json sits one level above both src/ and build/.
+export const SERVER_VERSION: string = createRequire(import.meta.url)("../package.json").version;
 
 /** Builds the MCP server with every endpoint in the configured toolsets registered as a tool. */
 export function createServer(config: Config, fetchImpl: typeof fetch = fetch): McpServer {

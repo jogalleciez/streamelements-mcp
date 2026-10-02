@@ -28,6 +28,7 @@ export const loyaltyEndpoints: EndpointDef[] = [
     path: "/loyalty/{channel}",
     input: { settings: jsonObject("Loyalty settings document, e.g. { \"loyalty\": { \"name\": \"gems\", \"amount\": 5, ... } }") },
     body: { from: "settings" },
+    annotations: { destructiveHint: true },
   },
   {
     name: "loyalty_stats",
@@ -155,7 +156,8 @@ export const loyaltyEndpoints: EndpointDef[] = [
       mode: z.enum(["add", "set"]).describe("add: add to balances; set: replace balances"),
     },
     body: ["users", "mode"],
-    annotations: { idempotentHint: false },
+    // mode "set" overwrites balances.
+    annotations: { destructiveHint: true, idempotentHint: false },
   },
   {
     name: "points_reset_all",

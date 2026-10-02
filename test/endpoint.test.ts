@@ -31,6 +31,11 @@ describe("buildRequest", () => {
     expect(request.path).toBe(`/bot/commands/${CH}/a%20b%2Fc`);
   });
 
+  it.each(["", ".", ".."])("rejects the path segment %j, which would change the endpoint", (value) => {
+    expect(() => buildRequest(def(), { commandId: value }, CH)).toThrow(/Invalid commandId/);
+    expect(() => buildRequest(def(), { commandId: "c" }, value)).toThrow(/Invalid channel/);
+  });
+
   it("fills numeric placeholders, keeping negative numbers", () => {
     const points = def({
       method: "PUT",
@@ -242,6 +247,27 @@ describe("registerEndpoint", () => {
     const mcp = await setup(def(), fakeFetch(() => jsonResponse({ a: 1 })), { channelId: CH });
     const result = await mcp.callTool({ name: "commands_get", arguments: { commandId: "c" } });
     expect(resultText(result)).toBe('{\n  "a": 1\n}');
+  });
+
+  it("redacts credential fields at any depth", async () => {
+    const payload = {
+      _id: CH,
+      apiToken: "se-jwt",
+      accessToken: "twitch-oauth",
+      users: [{ role: "owner", refreshToken: "r", token: "t" }],
+      integrations: { clientSecret: "s", password: "p" },
+      tokenType: "bearer",
+    };
+    const mcp = await setup(def(), fakeFetch(() => jsonResponse(payload)), { channelId: CH });
+    const result = await mcp.callTool({ name: "commands_get", arguments: { commandId: "c" } });
+    expect(JSON.parse(resultText(result))).toEqual({
+      _id: CH,
+      apiToken: "[redacted]",
+      accessToken: "[redacted]",
+      users: [{ role: "owner", refreshToken: "[redacted]", token: "[redacted]" }],
+      integrations: { clientSecret: "[redacted]", password: "[redacted]" },
+      tokenType: "bearer",
+    });
   });
 
   it("reports success for an empty response", async () => {

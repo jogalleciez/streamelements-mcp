@@ -20,7 +20,10 @@ async function main(): Promise<void> {
 
   const server = createServer(config);
   await server.connect(new StdioServerTransport());
-  log(`Running on stdio (${config.auth.type} auth, toolsets: ${[...config.toolsets].join(", ")})`);
+  log(
+    `Running on stdio (${config.auth.type} auth${config.readOnly ? ", read-only" : ""}, ` +
+      `toolsets: ${[...config.toolsets].join(", ")})`,
+  );
 }
 
 process.on("unhandledRejection", (reason) => {

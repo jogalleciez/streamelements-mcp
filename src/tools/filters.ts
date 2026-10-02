@@ -26,6 +26,7 @@ export const filterEndpoints: EndpointDef[] = [
     path: "/bot/filters/{channel}",
     input: { settings: jsonObject("Filter document to save") },
     body: { from: "settings" },
+    annotations: { destructiveHint: true },
   },
   {
     name: "filters_update",

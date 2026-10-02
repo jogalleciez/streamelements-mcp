@@ -76,6 +76,24 @@ describe("loadConfig toolsets", () => {
   });
 });
 
+describe("loadConfig read-only mode", () => {
+  it("is off when SE_READ_ONLY is unset", () => {
+    expect(loadConfig({ SE_JWT_TOKEN: JWT }).readOnly).toBe(false);
+  });
+
+  it.each(["true", "TRUE", "1", "yes"])("is on for SE_READ_ONLY=%s", (value) => {
+    expect(loadConfig({ SE_JWT_TOKEN: JWT, SE_READ_ONLY: value }).readOnly).toBe(true);
+  });
+
+  it.each(["false", "0", "no", " "])("is off for SE_READ_ONLY=%j", (value) => {
+    expect(loadConfig({ SE_JWT_TOKEN: JWT, SE_READ_ONLY: value }).readOnly).toBe(false);
+  });
+
+  it("rejects an SE_READ_ONLY value that is not a boolean", () => {
+    expect(() => loadConfig({ SE_JWT_TOKEN: JWT, SE_READ_ONLY: "maybe" })).toThrow(/SE_READ_ONLY/);
+  });
+});
+
 describe("loadConfig numeric settings", () => {
   it("defaults timeout to 15000ms and response cap to 100000 chars", () => {
     const config = loadConfig({ SE_JWT_TOKEN: JWT });

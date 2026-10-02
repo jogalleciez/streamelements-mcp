@@ -7,6 +7,8 @@ export interface Config {
   /** Channel id used when a tool call omits `channel`. Resolved via /channels/me when unset. */
   channelId?: string;
   toolsets: ReadonlySet<Toolset>;
+  /** Register only read-only tools. */
+  readOnly: boolean;
   timeoutMs: number;
   maxResponseChars: number;
   /** Non-fatal problems for the entrypoint to log to stderr. */
@@ -31,6 +33,17 @@ function readPositiveInt(env: Env, name: string, fallback: number): number {
     throw new Error(`${name} must be a positive integer, got "${raw}".`);
   }
   return Number(raw);
+}
+
+function readBoolean(env: Env, name: string): boolean {
+  const raw = readString(env, name)?.toLowerCase();
+  if (raw === undefined || raw === "false" || raw === "0" || raw === "no") {
+    return false;
+  }
+  if (raw === "true" || raw === "1" || raw === "yes") {
+    return true;
+  }
+  throw new Error(`${name} must be true or false, got "${env[name]?.trim()}".`);
 }
 
 export function loadConfig(env: Env = process.env): Config {
@@ -65,6 +78,7 @@ export function loadConfig(env: Env = process.env): Config {
     auth,
     channelId,
     toolsets: parseToolsets(env.SE_TOOLSETS),
+    readOnly: readBoolean(env, "SE_READ_ONLY"),
     timeoutMs: readPositiveInt(env, "SE_TIMEOUT_MS", 15000),
     maxResponseChars: readPositiveInt(env, "SE_MAX_RESPONSE_CHARS", 100000),
     warnings,

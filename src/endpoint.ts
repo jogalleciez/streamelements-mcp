@@ -27,6 +27,8 @@ export interface EndpointDef {
   /** Description for the automatic `channel` input, when the default wording doesn't fit. */
   channelDescription?: string;
   annotations?: Partial<ToolAnnotations>;
+  /** Not in the official spec (`spec/endpoints.json`); found in community documentation instead. */
+  unofficial?: boolean;
 }
 
 export interface RegisterOptions {
@@ -35,7 +37,7 @@ export interface RegisterOptions {
 
 const NAME_PATTERN = /^[a-z][a-z0-9_]{0,39}$/;
 const PLACEHOLDER = /\{(\w+)\}/g;
-const DEFAULT_CHANNEL_DESCRIPTION =
+export const DEFAULT_CHANNEL_DESCRIPTION =
   "StreamElements channel id (24-char hex). Defaults to SE_CHANNEL_ID or the channel that owns the token.";
 
 function placeholders(path: string): string[] {
@@ -97,10 +99,22 @@ export function endpointProblems(def: EndpointDef): string[] {
   return problems;
 }
 
+/**
+ * URL-encodes one path segment. Rejects empty, `.` and `..`, which encodeURIComponent leaves as-is and which
+ * would point the request at a different endpoint.
+ */
+export function pathSegment(key: string, value: unknown): string {
+  const text = String(value);
+  if (text === "" || text === "." || text === "..") {
+    throw new Error(`Invalid ${key} "${text}": it must not be empty, "." or "..".`);
+  }
+  return encodeURIComponent(text);
+}
+
 /** Turns tool arguments into an API request. `channel` fills `{channel}` when the path has one. */
 export function buildRequest(def: EndpointDef, args: Record<string, unknown>, channel?: string): RequestOptions {
   const path = def.path.replace(PLACEHOLDER, (_match, key: string) =>
-    encodeURIComponent(String(key === "channel" ? channel : args[key])),
+    pathSegment(key, key === "channel" ? channel : args[key]),
   );
 
   let query: Record<string, unknown> | undefined;
@@ -131,11 +145,19 @@ export function buildToolAnnotations(def: EndpointDef): ToolAnnotations {
   return { title: def.title, ...METHOD_ANNOTATIONS[def.method], openWorldHint: true, ...def.annotations };
 }
 
+/** Keys whose values are credentials, e.g. `apiToken` and `accessToken` on /channels/me. */
+const SECRET_KEY = /(token|secret|password)$/i;
+
+/** Replaces credential values so tokens never reach the model or the transcript. */
+function redactSecrets(key: string, value: unknown): unknown {
+  return SECRET_KEY.test(key) && value !== null ? "[redacted]" : value;
+}
+
 function formatResult(data: unknown, request: RequestOptions, maxChars: number): string {
   if (data === null || data === undefined) {
     return `Success (${request.method} ${request.path} returned no content).`;
   }
-  const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  const text = typeof data === "string" ? data : JSON.stringify(data, redactSecrets, 2);
   if (text.length <= maxChars) {
     return text;
   }

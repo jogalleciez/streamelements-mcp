@@ -26,6 +26,7 @@ export const sessionEndpoints: EndpointDef[] = [
     path: "/sessions/{channel}",
     input: { data: jsonObject("Session data fields to save") },
     body: { from: "data" },
+    annotations: { destructiveHint: true },
   },
   {
     name: "sessions_get_settings",

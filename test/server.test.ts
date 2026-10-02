@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "../src/config.js";
 import { createServer } from "../src/server.js";
@@ -11,9 +12,9 @@ function connect(env: Record<string, string>, fetch: FakeFetch = fakeFetch()) {
 }
 
 describe("createServer", () => {
-  it("registers all 137 tools by default", async () => {
+  it("registers all 140 tools by default (137 official, 3 undocumented overlay tools)", async () => {
     const mcp = await connect({});
-    expect((await mcp.listTools()).tools).toHaveLength(137);
+    expect((await mcp.listTools()).tools).toHaveLength(140);
   });
 
   it("registers only the tools of the selected toolsets", async () => {
@@ -21,12 +22,51 @@ describe("createServer", () => {
     const names = (await mcp.listTools()).tools.map((tool) => tool.name).sort();
     expect(names).toEqual([
       "overlays_action",
+      "overlays_create",
+      "overlays_delete",
       "overlays_get",
       "overlays_list",
       "overlays_reload",
+      "overlays_update",
       "themes_get",
       "themes_list",
     ]);
+  });
+
+  it("registers only read-only tools in read-only mode", async () => {
+    const mcp = await connect({ SE_TOOLSETS: "overlays,filters", SE_READ_ONLY: "true" });
+    const { tools } = await mcp.listTools();
+    expect(tools.map((tool) => tool.name).sort()).toEqual([
+      "filters_banphrase_search",
+      "filters_list",
+      "filters_test_message",
+      "overlays_get",
+      "overlays_list",
+    ]);
+    expect(tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true);
+  });
+
+  it("marks tools that overwrite data as destructive", async () => {
+    const mcp = await connect({});
+    const destructive = new Set(
+      (await mcp.listTools()).tools.filter((tool) => tool.annotations?.destructiveHint).map((tool) => tool.name),
+    );
+    for (const name of [
+      "points_bulk_update",
+      "filters_update_settings",
+      "loyalty_update_settings",
+      "sessions_update",
+      "sessions_reset",
+      "points_reset_all",
+    ]) {
+      expect(destructive.has(name), name).toBe(true);
+    }
+  });
+
+  it("reports the package.json version", async () => {
+    const mcp = await connect({});
+    const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+    expect(mcp.getServerVersion()?.version).toBe(version);
   });
 
   it("calls giveaways on the v3 API for the configured channel", async () => {

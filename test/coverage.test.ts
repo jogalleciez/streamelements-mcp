@@ -43,20 +43,29 @@ const TAG_TOOLSET: Record<string, string> = {
 
 const key = (op: { method: string; path: string }) => `${op.method} ${op.path}`;
 
+const OFFICIAL = ALL_ENDPOINTS.filter((def) => !def.unofficial);
+const UNOFFICIAL = ALL_ENDPOINTS.filter((def) => def.unofficial);
+
 describe("coverage of the official StreamElements spec", () => {
-  it("defines exactly 137 endpoints", () => {
+  it("defines exactly 137 official endpoints", () => {
     expect(spec.operations).toHaveLength(137);
-    expect(ALL_ENDPOINTS).toHaveLength(137);
+    expect(OFFICIAL).toHaveLength(137);
   });
 
   it("implements every operation in the spec", () => {
-    const implemented = new Set(ALL_ENDPOINTS.map(key));
+    const implemented = new Set(OFFICIAL.map(key));
     expect(spec.operations.map(key).filter((op) => !implemented.has(op))).toEqual([]);
   });
 
-  it("implements nothing outside the spec", () => {
+  it("implements nothing outside the spec unless marked unofficial", () => {
     const documented = new Set(spec.operations.map(key));
-    expect(ALL_ENDPOINTS.map(key).filter((op) => !documented.has(op))).toEqual([]);
+    expect(OFFICIAL.map(key).filter((op) => !documented.has(op))).toEqual([]);
+  });
+
+  it("marks only operations missing from the spec as unofficial, and says so in their descriptions", () => {
+    const documented = new Set(spec.operations.map(key));
+    expect(UNOFFICIAL.filter((def) => documented.has(key(def))).map((def) => def.name)).toEqual([]);
+    expect(UNOFFICIAL.filter((def) => !def.description.includes("Undocumented")).map((def) => def.name)).toEqual([]);
   });
 
   it("implements each operation once", () => {
@@ -66,7 +75,7 @@ describe("coverage of the official StreamElements spec", () => {
 
   it("puts each endpoint in the toolset for its spec tag", () => {
     const tagOf = new Map(spec.operations.map((op) => [key(op), op.tag]));
-    const misplaced = ALL_ENDPOINTS.filter((def) => TAG_TOOLSET[tagOf.get(key(def)) ?? ""] !== def.toolset).map(
+    const misplaced = OFFICIAL.filter((def) => TAG_TOOLSET[tagOf.get(key(def)) ?? ""] !== def.toolset).map(
       (def) => `${def.name} (${def.toolset}) for tag ${tagOf.get(key(def))}`,
     );
     expect(misplaced).toEqual([]);
